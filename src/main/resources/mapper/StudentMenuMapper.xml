@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace= "cn.com.mapper.StudentMenuMapper" >
+    <resultMap id="MenuResultMap" type="cn.com.pojo.StudentMenu">
+        <id column="menu_id" property="menuId" />
+        <result column="path" property="path" />
+        <result column="name" property="name" />
+        <result column="label" property="label" />
+        <result column="icon" property="icon" />
+        <result column="url" property="url" />
+        <collection property="children" javaType="ArrayList" ofType="cn.com.pojo.StudentMenu">
+            <id column="menu_ids" property="menuId" />
+            <result column="paths" property="path" />
+            <result column="names" property="name" />
+            <result column="labels" property="label" />
+            <result column="icons" property="icon" />
+            <result column="urls" property="url" />
+        </collection>
+    </resultMap>
+    <select id="getStudentMenu" resultMap="MenuResultMap">
+        SELECT
+            s1.menu_id,
+            s1.path,
+            s1.NAME,
+            s1.label,
+            s1.icon,
+            s1.url,
+            s2.menu_id AS menu_ids,
+            s2.path AS paths,
+            s2.NAME AS NAMES,
+	s2.label AS labels,
+	s2.icon AS icons,
+	s2.url AS urls
+        FROM
+            student_memu s1
+            left JOIN student_memu s2 ON s1.parent = s2.menu_id
+        where s2.menu_id is null and s1.url is not null
+        union all
+        SELECT
+            s1.menu_id,
+            s1.path,
+            s1.NAME,
+            s1.label,
+            s1.icon,
+            s1.url,
+            s2.menu_id AS menu_ids,
+            s2.path AS paths,
+            s2.NAME AS NAMES,
+	s2.label AS labels,
+	s2.icon AS icons,
+	s2.url AS urls
+        FROM
+            student_memu s2
+            inner JOIN student_memu s1 ON s2.parent = s1.menu_id
+    </select>
+</mapper>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace= "cn.com.mapper.StudentPermissionHisMapper" >
+    <insert id="addPermissionHis">
+        <!--权限配置历史记录-->
+        INSERT INTO stu_permission_his
+        (
+            permission_his_guid,
+            permission_guid,
+            permission_type,
+            to_group,
+            to_person,
+            effective_time,
+            failure_time,
+            createdBy,
+            createddate
+        ) SELECT
+              UPPER(UUID()),
+              t.permission_guid,
+              t.permission_type,
+              t.to_group,
+              t.to_person,
+              t.effective_time,
+              t.failure_time,
+              t.createdby,
+              t.createddate
+        FROM
+            stu_permission t
+        WHERE
+            t.permission_guid = #{stuPermissionHisGuid}
+    </insert>
+</mapper>

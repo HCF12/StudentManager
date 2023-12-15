@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace= "cn.com.mapper.LoginHisMapper" >
+    <insert id="addLoginHis">
+        insert into login_his (stu_id,loginIp,loginAddress,loginDate) values (#{stuId},#{loginIp},#{loginAddress},NOW())
+    </insert>
+    <select id="getLoginHisByStudentId" parameterType="java.lang.String" resultType="cn.com.pojo.LoginHis">
+        SELECT
+        loginIp,
+        loginAddress,
+        loginDate
+        FROM
+        login_his
+        WHERE
+        stu_id = #{studentId}
+        Order by loginDate desc
+        Limit 1
+    </select>
+</mapper>

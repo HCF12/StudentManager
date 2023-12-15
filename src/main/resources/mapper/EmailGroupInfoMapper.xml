@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="cn.com.mapper.EmailGroupInfoMapper">
+    <insert id="addEmailGroup">
+        INSERT INTO email_group_info
+        (`rec_guid`,
+        `customer_no`,
+        `customer_name`,
+        `receive_email`,
+        `carbon`,
+        `subject`,
+        `email_model`,
+        `expect_time`,
+        `status`,
+        `created_date`,
+        `created_by`,
+        `modified_date`,
+        `modified_by`,
+        `content`,
+        `attachment_guid`,
+        `send_status`,
+        `check_status`)
+        VALUES
+        (UPPER(UUID()),
+        #{customerNo},
+        #{customerName},
+        #{receiveEmail},
+        #{carbon},
+        #{subject},
+        #{emailModel},
+        #{expectTime},
+        #{status},
+        now(),
+        #{createdBy},
+        #{modifiedDate},
+        #{modifiedBy},
+        #{content},
+        #{attachmentGuid},
+        #{sendStatus},
+        #{checkStatus})
+    </insert>
+
+    <select id="getEmailGroupInfoById" parameterType="java.lang.Integer" resultType="cn.com.pojo.EmailGroupInfo">
+        SELECT
+        customer_no,
+        customer_name,
+        receive_email,
+        carbon,
+        `subject`,
+        is_model,
+        email_model,
+        content,
+        expect_time,
+        `status`
+        FROM
+        email_group_info
+        WHERE customer_no = #{id}
+    </select>
+
+    <update id="updEmailGroup">
+        update email_group_info
+        <set>
+            <if test="customerNo != null">customer_no = #{customerNo},</if>
+            <if test="customerName != null">customer_name = #{customerName},</if>
+            <if test="receiveEmail != null">receive_email = #{receiveEmail},</if>
+            <if test="carbon != null">carbon = #{carbon},</if>
+            <if test="subject != null">subject = #{subject},</if>
+            <if test="isModel != null">is_model = #{isModel},</if>
+            <if test="emailModel != null">email_model = #{emailModel},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="expectTime != null">expect_time = #{expectTime},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        where customer_no = #{customerNo}
+    </update>
+
+    <update id="updateStatus">
+        update email_group_info set status = 0,send_status = #{sendStatus} where customer_no = #{customerNo}
+    </update>
+
+    <select id="getCustomerCount" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        select count(1) from email_group_info where customer_no = #{customerNo}
+    </select>
+
+    <resultMap id="getEmailMap" type="cn.com.vo.EmailGroupInfoVo">
+        <result column="customer_no" property="customerNo"></result>
+        <result column="customer_name" property="customerName"></result>
+        <result column="receive_email" property="receiveEmail"></result>
+        <result column="carbon" property="carbon"></result>
+        <result column="expect_time" property="expectTime"></result>
+        <result column="status" property="status"></result>
+        <result column="checkStatus" property="checkStatus"></result>
+        <result column="sendStatus" property="sendStatus"></result>
+        <result column="created_date" property="createdDate"></result>
+        <result column="operator" property="operator"></result>
+    </resultMap>
+    <select id="getEmailGroupInfoList" parameterType="java.util.Map" resultMap="getEmailMap">
+        SELECT
+        customer_no,
+        customer_name,
+        receive_email,
+        carbon,
+        expect_time,
+        case `status` when 1 then &apos;启用&apos; else &apos;停用&apos; end as status,
+        case check_status when 0 then &apos;待审核&apos; when 1 then &apos;已审核&apos; end as checkStatus,
+        case send_status when 0 then &apos;准备中&apos; when 1 then '待发送' else &apos;发送完成&apos; end as sendStatus,
+        created_date,
+        &apos;&lt;font-awesome-icon icon=&quot;fal fa-edit&quot; /&gt; 修改&apos; as operator
+        FROM
+        email_group_info
+        <where>
+            <if test="customerNo != null and customerNo != ''">
+                and customer_no = #{customerNo}
+            </if>
+            <if test="customerName != null and customerName != ''">
+                and customer_name = #{customerName}
+            </if>
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and expect_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and expect_time &lt;= #{endTime}
+            </if>
+        </where>
+    </select>
+
+    <!-- 启用 -->
+    <update id="startEmailConfiguration">
+        update email_group_info set status = 1 where customer_no in (
+        <foreach collection="customerNos" item="id" index="index" open="" close="" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
+    <!-- 审核 -->
+    <update id="checkEmailConfiguration">
+        update email_group_info set check_status = 1 where `status` = 1 and customer_no in (
+        <foreach collection="customerNos" item="id" index="index" open="" close="" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
+    <!-- 执行 -->
+    <update id="runEmailConfiguration">
+        update email_group_info set send_status = 1 where `status` = 1 and check_status = 1 and customer_no in (
+        <foreach collection="customerNos" item="id" index="index" open="" close="" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelEmailConfiguration">
+        delete from email_group_info where  customer_no in (
+        <foreach collection="customerNos" item="id" index="index" open="" close="" separator=",">
+            #{id}
+        </foreach>
+        )
+    </delete>
+</mapper>

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace= "cn.com.mapper.StudentMapper" >
+    <select id="login" parameterType="java.lang.String" resultType="cn.com.pojo.Student">
+        select * from student where loginname =#{loginName}
+    </select>
+    <!--学生信息集映射配置-->
+    <resultMap id="studentResultMap" type="cn.com.pojo.Student">
+        <id column="student_id" property="studentId"/>
+        <result column="student_name" property="studentName" />
+        <result column="gender" property="gender" />
+        <result column="mobile" property="mobile" />
+        <result column="address" property="address" />
+        <result column="workstatus" property="workStatus" />
+        <result column="loginname" property="loginName" />
+        <result column="brith_date" property="brithDate"/>
+        <result column="email" property="email"/>
+        <result column="stu_no" property="stuNo"/>
+        <association property="grade" javaType="cn.com.pojo.Grade">
+            <id column="grade_id" property="gradeId" />
+            <result column="grade_name" property="gradeName" />
+        </association>
+        <association property="cls" javaType="cn.com.pojo.StudentClass">
+            <id column="class_id" property="classId" />
+            <result column="class_name" property="className" />
+        </association>
+    </resultMap>
+
+    <!--学生信息集-->
+    <select id="getStudent" resultMap="studentResultMap" parameterType="java.util.Map">
+        SELECT
+        s.student_id,
+        <if test="maskPermission > 0">
+            CASE
+            WHEN s.student_name IS NULL THEN
+            s.student_name ELSE REPLACE ( s.student_name, substr( s.student_name, 2, 1 ), '*' )
+            END student_name,
+        </if>
+        <if test="maskPermission == 0">
+            student_name,
+        </if>
+        CASE
+        WHEN s.gender = '1' THEN
+        '男'
+        WHEN s.gender = '2' THEN
+        '女'
+        END gender,
+        <if test="maskPermission > 0">
+            CASE
+            WHEN LENGTH( s.mobile )= '11' THEN
+            REPLACE ( s.mobile, substr( s.mobile, 4, 4 ), '****' )
+            END mobile,
+        </if>
+        <if test="maskPermission == 0">
+            mobile,
+        </if>
+        <if test="maskPermission > 0">
+            CASE
+            WHEN s.address IS NULL THEN
+            ''
+            WHEN instr( s.address, '县' )!= 0 THEN
+            REPLACE ( s.address, substr( s.address, instr( s.address, '县')+1), '*' )
+            WHEN instr( s.address, '区' )!= 0 THEN
+            REPLACE ( s.address, substr( s.address, instr( s.address, '区')+1), '*' )
+            WHEN instr( s.address, '市' )!= 0 THEN
+            REPLACE ( s.address, substr( s.address, instr( s.address, '市')+1), '*' )
+            WHEN instr( s.address, '省' )!= 0 THEN
+            REPLACE ( s.address, substr( s.address, instr( s.address, '省')+1), '*' )
+            WHEN instr( s.address, '街道' )!= 0
+            OR instr( s.address, '路' )!= 0
+            OR instr( s.address, '号' )!= 0 THEN
+            '' ELSE s.address
+            END address,
+        </if>
+        <if test="maskPermission == 0">
+            address,
+        </if>
+        CASE
+        WHEN s.workstatus = '1' THEN
+        '在籍'
+        WHEN s.workstatus = '2' THEN
+        '休学'
+        WHEN s.workstatus = '3' THEN
+        '退学'
+        WHEN s.workstatus = '4' THEN
+        '离校'
+        END workstatus,
+        s.class_id,
+        s.grade_id,
+        c.class_id,
+        c.class_name,
+        g.grade_id,
+        g.grade_name,
+        s.loginname,
+        s.brith_date,
+        s.email,
+        s.stu_no
+        FROM
+        student s
+        LEFT JOIN grade g ON s.grade_id = g.grade_id
+        LEFT JOIN class c ON s.class_id = c.class_id
+        WHERE
+        1 = 1
+        <if test="grade!='' and grade!=null">
+            AND s.grade_id = #{grade}
+        </if>
+        <if test="cls!='' and cls!=null">
+            AND s.class_id = #{cls}
+        </if>
+        <if test="studentName!='' and studentName!=null">
+            AND s.student_name like concat('%',#{studentName},'%')
+        </if>
+    </select>
+
+    <!--加锁-->
+    <update id="lock">
+        update student set workstatus = '0' where student_id = #{studentId}
+    </update>
+
+    <!-- 获取当前用户是否锁定 -->
+    <select id="getLockCount" resultType="java.lang.Integer" parameterType="java.lang.String">
+        select count(1) from student where loginname = #{loginName} and workstatus = 0
+    </select>
+
+    <!--解锁-->
+    <update id="unlock">
+        update student set workstatus = "1" where student_id = #{studentId}
+    </update>
+
+    <!--获取原密码-->
+    <select id="getOldPassword" resultType="java.lang.String" parameterType="java.lang.String">
+        select password from student where student_id = #{studentId}
+    </select>
+
+    <!--密码修改-->
+    <update id="updPassword" parameterType="java.util.Map">
+        update student set password = #{newPassword} where student_id = #{studentId}
+    </update>
+
+    <update id="updateStatus">
+        update student set stu_state = 0 where stu_no = #{stuNo}
+    </update>
+
+    <!--注册学生信息-->
+    <insert id="register">
+        INSERT INTO student
+            (
+                student_id,
+                student_name,
+                gender,
+                mobile,
+                address,
+                workstatus,
+                class_id,
+                grade_id,
+                loginname,
+                password
+            )
+        VALUES
+            (
+                #{studentId},
+                #{studentName},
+                #{gender},
+                #{mobile},
+                #{address},
+                '1',
+                #{classId},
+                #{gradeId},
+                #{loginName},
+                #{password}
+            );
+    </insert>
+
+    <!--根据学生id查询学生信息-->
+    <select id="getStudentById" parameterType="java.lang.String" resultType="cn.com.pojo.Student">
+        select student_name,gender,mobile,address,grade_id,class_id,loginname from student where student_id = #{studentId}
+    </select>
+
+    <!--解锁查询-->
+    <select id="getStudentUnlock" resultType="cn.com.pojo.Student">
+        SELECT
+        student_id,
+        student_name,
+        loginname,
+        CASE
+
+        WHEN workstatus = '0' THEN
+        '加锁'
+        END
+        workStatus
+        FROM
+        student
+        WHERE
+        workstatus = '0'
+        <if test="studentName != null and studentName != ''">
+            AND student_name = #{studentName}
+        </if>
+        <if test="loginName != null and loginName != ''">
+            AND loginname = #{loginName}
+        </if>
+    </select>
+
+    <!--编辑学生信息-->
+    <update id="updStudent">
+        update student
+        <set>
+            <if test="studentName != null">student_name = #{studentName},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="mobile != null">mobile = #{mobile},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+        </set>
+        where student_id = #{studentId}
+    </update>
+</mapper>

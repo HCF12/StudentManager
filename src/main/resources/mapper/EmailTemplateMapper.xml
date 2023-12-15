@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace= "cn.com.mapper.EmailTemplateMapper" >
+    <select id="getEmailTemplate" resultType="cn.com.pojo.EmailTemplate">
+        SELECT
+        `doctemplate_id`,
+        `description`,
+        `status`,
+        `file_name`,
+        `document_path`,
+        `created_date`,
+        `order`,
+        `pic_path`,
+        `carbon`
+        FROM
+        email_template
+    </select>
+
+    <select id="getTemplateContent" parameterType="java.lang.String" resultType="java.lang.String">
+        select content from email_template where doctemplate_id = #{templateId}
+    </select>
+</mapper>

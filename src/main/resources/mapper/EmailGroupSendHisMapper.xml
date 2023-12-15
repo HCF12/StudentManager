@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace= "cn.com.mapper.EmailGroupSendHisMapper" >
+    <insert id="addEmailGroupHis" >
+        INSERT INTO email_group_send_his (
+        his_guid,
+        batch_guid,
+        template_id,
+        customer_no,
+        customer_name,
+        email,
+        carbon,
+        `subject`,
+        content,
+        content_type,
+        state,
+        priority,
+        pie,
+        trail_count,
+        trail_count_limit,
+        expected_start_date,
+        created_date
+        ) SELECT
+        UPPER(
+        UUID()),
+        batch_id,
+        template_id,
+        customer_no,
+        customer_name,
+        email,
+        carbon,
+        `subject`,
+        content,
+        content_type,
+        #{status},
+        priority,
+        pie,
+        trial_count,
+        trial_count_limit,
+        expected_start_date,
+        created_date
+        FROM
+        email_group_send_task
+        WHERE
+        customer_no = #{customerNo}
+    </insert>
+
+    <select id="getEmailGroupSendHisInfo" resultType="cn.com.vo.EmailGroupHisVo" parameterType="java.util.Map">
+        select eh.batch_guid,
+        et.description,
+        eh.customer_no,
+        eh.customer_name,
+        eh.email,
+        eh.carbon,
+        eh.subject,
+        eh.content,
+        eh.content_type,
+        eh.priority,
+        IF(eh.pie = 2, 'QQ', '未知') pie,
+        eh.trail_count,
+        eh.trail_count_limit,
+        eh.expected_start_date,
+        eh.created_date
+        from email_group_send_his eh
+        left join email_template et on et.doctemplate_id = eh.template_id
+        <where>
+            <if test="batchGuid != null and batchGuid != ''">
+                and eh.batch_guid = #{batchGuid}
+            </if>
+            <if test="customerNo != null and customerNo != ''">
+                and eh.customer_no = #{customerNo}
+            </if>
+            <if test="customerName != null and customerName != ''">
+                and eh.customer_name concat('%',#{customerName},'%')
+            </if>
+            <if test="subject != null and subject != ''">
+                and instr(eh.subject,#{subject}) > 0
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and startTime &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and startTime &lt;= #{endTime}
+            </if>
+        </where>
+    </select>
+</mapper>

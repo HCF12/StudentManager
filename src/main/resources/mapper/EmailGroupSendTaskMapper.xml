@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace= "cn.com.mapper.EmailGroupSendTaskMapper" >
+    <insert id="addEmailGroupSendTask" >
+        insert into email_group_send_task
+        (`REC_GUID`,
+        `BATCH_ID`,
+        `TEMPLATE_ID`,
+        `customer_no`,
+        `customer_name`,
+        `EMAIL`,
+        `carbon`,
+        `CONTENT`,
+        `content_type`,
+        `STATE`,
+        `PRIORITY`,
+        `PIE`,
+        `created_date`,
+        `expected_start_date`,
+        `trial_count`,
+        `trial_count_limit`,
+        `SUBJECT`,
+        `ATTACHMENT_GUID`)
+        select
+        UPPER(UUID()),
+        #{batchId},
+        `email_model`,
+        `customer_no`,
+        `customer_name`,
+        `receive_email`,
+        `carbon`,
+        `content`,
+        'html',
+        `send_status`,
+        1,
+        2,
+        NOW(),
+        `expect_time`,
+        0,
+        3,
+        `subject`,
+        `ATTACHMENT_GUID`
+        from email_group_info
+        where `status` = 1 and `send_status` = 1 and check_status =1 and customer_no in (
+        <foreach collection="customerNos" item="id" index="index" open="" close="" separator=",">
+            #{id}
+        </foreach>
+        )
+    </insert>
+
+    <insert id="addSingleEmailGroupSendTask">
+        insert into email_group_send_task
+            (`REC_GUID`,
+            `BATCH_ID`,
+            `TEMPLATE_ID`,
+            `customer_no`,
+            `customer_name`,
+            `EMAIL`,
+            `carbon`,
+            `CONTENT`,
+            `content_type`,
+            `STATE`,
+            `PRIORITY`,
+            `PIE`,
+            `created_date`,
+            `expected_start_date`,
+            `trial_count`,
+            `trial_count_limit`,
+            `SUBJECT`,
+            `ATTACHMENT_GUID`)
+        select
+            UPPER(UUID()),
+            #{batchId},
+            #{templateId},
+            stu_no,
+            student_name,
+            email,
+            #{carbon},
+            #{content},
+            'html',
+            0,
+            1,
+            2,
+            NOW(),
+            #{expectedStartDate},
+            0,
+            3,
+            #{subject},
+            #{attachmentGuid}
+        from
+            student where workstatus = 1 and stu_state = 1
+    </insert>
+
+    <resultMap id="emailSendTaskMap" type="cn.com.pojo.EmailGroupSendTask">
+        <result column="customer_no" property="customerNo"></result>
+        <result column="customer_name" property="customerName"></result>
+        <result column="email" property="email"></result>
+        <result column="carbon" property="carbon"></result>
+        <result column="subject" property="subject"></result>
+        <result column="content" property="content"></result>
+        <collection property="attachmentMap" javaType="java.util.Map" ofType="cn.com.pojo.EmailGroupAttachment">
+            <id column="recGuid" property="rec_guid"></id>
+            <result column="attachment_path" property="attachmentPath"></result>
+        </collection>
+    </resultMap>
+
+    <select id="getEmailGroupSendTask" resultMap="emailSendTaskMap">
+        SELECT
+            customer_no,
+            customer_name,
+            email,
+            carbon,
+            SUBJECT,
+            content,
+            et.attachment_path
+        FROM
+            email_group_send_task es
+        Left Join
+            email_group_attachment et on es.attachment_guid = et.attachment_guid
+        WHERE
+            trial_count &lt; trial_count_limit AND expected_start_date &lt;= now()
+            AND state = 1
+    </select>
+
+    <select id="getAllEmailGroupSendTask" resultType="java.util.Map">
+        SELECT
+        customer_name,
+        email,
+        carbon,
+        SUBJECT,
+        content
+        FROM
+        email_group_send_task
+        WHERE
+        1=1
+        <if test="startTime!='' and startTime !=null">
+            and expected_start_date &lt;= #{startTime}
+        </if>
+        <if test="endTime!='' and endTime !=null">
+            and expected_start_date &gt;= #{endTime}
+        </if>
+    </select>
+
+    <delete id="deleteSendTask">
+        delete from email_group_send_task where customer_no = #{customerNo}
+    </delete>
+</mapper>
